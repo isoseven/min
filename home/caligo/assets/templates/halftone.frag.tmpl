@@ -1,0 +1,28 @@
+float dots(vec2 origin, float a, float sc, float bias, float fill)
+{
+    vec2 p = origin * sc * mat2(cos(a), -sin(a), sin(a), cos(a));
+    p.x += iTime;
+    p = mod(p, 1.0) - 0.5;
+    return clamp(length(p) * 15.0 - bias + 6.0 * fill, 0.0, 1.0);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord)
+{
+    vec2 origin = fragCoord.xy / iResolution.xy;
+    origin.x *= iResolution.x / iResolution.y;
+
+    vec2 position = vec2(0.5);
+    position.x *= iResolution.x / iResolution.y;
+    float fill = sin(length(origin - position) * 7.5 * 0.4) * 1.5 + 0.7;
+
+    float r = dots(origin, 1.0, 37.3, 1.0, fill);
+    float g = dots(origin, 3.0, 43.7, 10.0, fill);
+    float b = dots(origin, 5.0, 46.3, 10.0, fill);
+
+    vec3 col = @BG@;
+    col = mix(@SUBALT@, col, b);
+    col = mix(@SUB@, col, g);
+    col = mix(@MAIN@, col, r);
+
+    fragColor = vec4(col, 1.0);
+}

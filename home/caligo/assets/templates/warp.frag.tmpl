@@ -1,0 +1,52 @@
+// warp.frag.tmpl — template for warp-wallpaper.frag (ported from
+// https://www.shadertoy.com/view/M3SSzw).
+//
+// @NAME@ tokens get replaced by render-theme (wallpaper-shader.nix) with a
+// `vec3(r, g, b)` computed from the active Monkeytype theme's colors
+// (~/.config/shaderbg/palettes/monkeytype.json). Deliberately only 4 of
+// Monkeytype's fields (subAlt/bg/sub/caret) — main/error/errorExtra/text are
+// left out on purpose, since those tend to be a theme's more saturated
+// "colorful" accent/error colors, which read as jarring across a whole
+// wallpaper rather than a small UI accent. The warp math itself is
+// untouched from the original shader — only the color block changed.
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = 6.0 * fragCoord / iResolution.xy;
+
+    for (int n = 1; n < 20; n++) {
+        float i = float(n);
+        uv += vec2(
+            1.0 / i * sin(i * uv.y + iTime / 10.0 * i) + 0.8,
+            1.0 / i * sin(uv.x + iTime / 10.0 * i) + 1.6
+        );
+    }
+
+    // Create a gradient value from the flowing pattern
+    float gradientValue = cos(uv.x + uv.y) * 0.5 + 0.5;
+
+    // ---- Theme colors (filled in by render-theme) ------------------------
+    // 4 stops, dark to bright: subAlt (darkest background shade) -> bg
+    // (background) -> sub (dim body text) -> caret (the theme's accent
+    // color) — the same 4 fields wallpaper-shader.nix's derive_palette()
+    // already maps to background/background-secondary/text-inactive/accent
+    // everywhere else, so this shader's palette matches what Hyprland's
+    // borders and GTK apps use too.
+    vec3 c_subalt = @SUBALT@;
+    vec3 c_bg     = @BG@;
+    vec3 c_sub    = @SUB@;
+    vec3 c_caret  = @CARET@;
+
+    vec3 color;
+    if (gradientValue < 0.333) {
+        color = mix(c_subalt, c_bg, gradientValue * 3.003);
+    } else if (gradientValue < 0.667) {
+        color = mix(c_bg, c_sub, (gradientValue - 0.333) * 2.994);
+    } else {
+        color = mix(c_sub, c_caret, (gradientValue - 0.667) * 3.003);
+    }
+
+    // Output to screen
+    fragColor = vec4(color, 1.0);
+}
